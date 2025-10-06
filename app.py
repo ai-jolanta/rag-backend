@@ -3,9 +3,10 @@ from flask_cors import CORS
 import google.generativeai as genai
 from qdrant_client import QdrantClient
 import os
+import re
 
 app = Flask(__name__)
-CORS(app)  # Zezwól na zapytania z frontendu
+CORS(app)
 
 # Konfiguracja z zmiennych środowiskowych
 QDRANT_URL = os.environ.get('QDRANT_URL')
@@ -16,6 +17,66 @@ COLLECTION_NAME = "prezentacje_biochemia"
 # Inicjalizacja klientów
 genai.configure(api_key=GEMINI_API_KEY)
 qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+
+def clean_html(text):
+    """Usuwa znaczniki HTML z tekstu"""
+    # Usuń tagi HTML
+    text = re.sub(r'<[^>]+>', '', text)
+    # Usuń nadmiarowe białe znaki
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
+def generate_answer(query, search_results):
+    """Generuje naturalną odpowiedź używając Gemini"""
+    
+    # Przygotuj kontekst z wyników wyszukiwania
+    context_parts = []
+    sources = []
+    
+    for i, result in enumerate(search_results[:3], 1):  # Top 3 wyniki
+        payload = result.payload
+        clean_content = clean_html(payload.get("content", ""))
+        
+        context_parts.append(f"Fragment {i}: {clean_content}")
+        sources.append({
+            "presentation": payload.get("presentation", ""),
+            "slide_id": payload.get("slide_id", ""),
+            "score": float(result.score)
+        })
+    
+    context = "\n\n".join(context_parts)
+    
+    # Prompt dla Gemini
+    prompt = f"""Jesteś asystentem AI, który odpowiada na pytania na podstawie materiałów szkoleniowych z biochemii.
+
+Pytanie użytkownika: {query}
+
+Dostępne fragmenty z materiałów:
+{context}
+
+INSTRUKCJE:
+1. Odpowiedz na pytanie w naturalny, zrozumiały sposób
+2. Bazuj TYLKO na informacjach z powyższych fragmentów
+3. Jeśli fragmenty nie zawierają odpowiedzi, powiedz to wprost
+4. Odpowiedź ma być zwięzła (2-4 zdania) ale merytoryczna
+5. NIE dodawaj na końcu informacji o źródłach - zostaną dodane automatycznie
+
+Odpowiedź:"""
+
+    try:
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        answer = response.text
+        
+        return {
+            "answer": answer,
+            "sources": sources
+        }
+    except Exception as e:
+        return {
+            "answer": f"Przepraszam, wystąpił błąd podczas generowania odpowiedzi: {str(e)}",
+            "sources": sources
+        }
 
 @app.route('/')
 def home():
@@ -49,23 +110,20 @@ def search():
             limit=5
         )
         
-        # 3. Formatuj wyniki
-        formatted_results = []
-        for hit in search_results:
-            formatted_results.append({
-                "score": float(hit.score),
-                "presentation": hit.payload.get("presentation", ""),
-                "slide_id": hit.payload.get("slide_id", ""),
-                "content": hit.payload.get("content", ""),
-                "chunk_index": hit.payload.get("chunk_index", 0),
-                "total_chunks": hit.payload.get("total_chunks", 1)
+        if not search_results:
+            return jsonify({
+                "success": True,
+                "answer": "Nie znalazłem informacji na ten temat w dostępnych materiałach.",
+                "sources": []
             })
+        
+        # 3. Wygeneruj naturalną odpowiedź
+        result = generate_answer(query, search_results)
         
         return jsonify({
             "success": True,
-            "query": query,
-            "results": formatted_results,
-            "count": len(formatted_results)
+            "answer": result["answer"],
+            "sources": result["sources"]
         })
         
     except Exception as e:

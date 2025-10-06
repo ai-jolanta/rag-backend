@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG System - Live Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+    
+    <!-- Nawigacja -->
+    <div class="fixed top-4 right-4 z-50 flex gap-2">
+        <button onclick="showSlide(0)" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition text-sm">
+            Intro
+        </button>
+        <button onclick="showSlide(1)" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition text-sm">
+            Jak działa
+        </button>
+        <button onclick="showSlide(2)" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition text-sm font-bold">
+            Live Demo
+        </button>
+    </div>
+
+    <div id="slides-container" class="min-h-screen"></div>
+
+    <script>
+        // URL BACKENDU Z RENDER
+        const BACKEND_URL = 'https://rag-backend-2lo0.onrender.com';
+
+        const slides = [
+            // Slide 1: Tytuł i problem
+            `<div class="min-h-screen flex items-center justify-center p-8">
+                <div class="max-w-4xl w-full space-y-12">
+                    <div class="text-center space-y-6">
+                        <h1 class="text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            Inteligentna Baza Wiedzy
+                        </h1>
+                        <p class="text-2xl text-gray-300">RAG System dla materiałów szkoleniowych</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-8 mt-16">
+                        <div class="bg-red-500/10 border border-red-500/30 p-8 rounded-xl">
+                            <h3 class="text-2xl font-bold mb-4 text-red-400">Bez RAG</h3>
+                            <ul class="space-y-3 text-gray-300">
+                                <li>→ AI bez dostępu do naszych materiałów</li>
+                                <li>→ Ogólne, nieprecyzyjne odpowiedzi</li>
+                                <li>→ Halucynacje (wymyślone fakty)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-green-500/10 border border-green-500/30 p-8 rounded-xl">
+                            <h3 class="text-2xl font-bold mb-4 text-green-400">Z RAG</h3>
+                            <ul class="space-y-3 text-gray-300">
+                                <li>→ AI przeszukuje nasze prezentacje</li>
+                                <li>→ Odpowiedzi oparte na faktach</li>
+                                <li>→ Źródło informacji (slajd + plik)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-600/20 border border-purple-400 rounded-xl p-6 text-center">
+                        <p class="text-xl"><strong>Baza:</strong> 720 wektorów z 6 prezentacji biochemicznych</p>
+                        <p class="text-sm text-gray-400 mt-2">Kolekcja: prezentacje_biochemia</p>
+                    </div>
+                </div>
+            </div>`,
+
+            // Slide 2: Jak działa
+            `<div class="min-h-screen flex items-center justify-center p-8">
+                <div class="max-w-5xl w-full">
+                    <h2 class="text-5xl font-bold mb-12 text-center">Jak to działa?</h2>
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-6">
+                            <div class="w-20 h-20 bg-blue-600 rounded-xl flex items-center justify-center text-3xl shrink-0">📄</div>
+                            <div class="flex-1 bg-blue-600/20 border border-blue-400 rounded-xl p-6">
+                                <div class="font-bold text-xl mb-2">1. Przygotowanie danych</div>
+                                <div class="text-gray-300">Prezentacje (CSV) → Gemini tworzy wektory (embeddingi) → Qdrant zapisuje</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-6">
+                            <div class="w-20 h-20 bg-purple-600 rounded-xl flex items-center justify-center text-3xl shrink-0">❓</div>
+                            <div class="flex-1 bg-purple-600/20 border border-purple-400 rounded-xl p-6">
+                                <div class="font-bold text-xl mb-2">2. Pytanie użytkownika</div>
+                                <div class="text-gray-300">Gemini zamienia pytanie na wektor</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-6">
+                            <div class="w-20 h-20 bg-green-600 rounded-xl flex items-center justify-center text-3xl shrink-0">🔍</div>
+                            <div class="flex-1 bg-green-600/20 border border-green-400 rounded-xl p-6">
+                                <div class="font-bold text-xl mb-2">3. Wyszukiwanie semantyczne</div>
+                                <div class="text-gray-300">Qdrant znajduje najbardziej podobne fragmenty (rozumie ZNACZENIE!)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center gap-6">
+                            <div class="w-20 h-20 bg-orange-600 rounded-xl flex items-center justify-center text-3xl shrink-0">💡</div>
+                            <div class="flex-1 bg-orange-600/20 border border-orange-400 rounded-xl p-6">
+                                <div class="font-bold text-xl mb-2">4. Odpowiedź</div>
+                                <div class="text-gray-300">Zwraca top 5 fragmentów z metadanymi (prezentacja, slajd, treść, score)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-12 bg-yellow-600/20 border border-yellow-400 rounded-xl p-6 text-center">
+                        <p class="text-lg"><strong>Kluczowa różnica:</strong> System rozumie znaczenie pytania, nie tylko szuka słów kluczowych!</p>
+                    </div>
+                </div>
+            </div>`,
+
+            // Slide 3: Live Demo
+            `<div class="min-h-screen flex items-center justify-center p-8">
+                <div class="max-w-6xl w-full">
+                    <h2 class="text-4xl font-bold mb-8 text-center">Live Demo - Przetestuj sam!</h2>
+                    
+                    <!-- Sugestie zapytań -->
+                    <div class="mb-6">
+                        <p class="text-sm text-gray-400 mb-3">Przykładowe pytania (kliknij aby użyć):</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="askQuestion('Jak działa β-oksydacja?')" 
+                                class="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400 rounded-lg text-sm transition">
+                                Jak działa β-oksydacja?
+                            </button>
+                            <button onclick="askQuestion('Co to są lipoproteiny?')" 
+                                class="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400 rounded-lg text-sm transition">
+                                Co to są lipoproteiny?
+                            </button>
+                            <button onclick="askQuestion('Jakie enzymy są używane w diagnostyce?')" 
+                                class="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400 rounded-lg text-sm transition">
+                                Enzymy w diagnostyce
+                            </button>
+                            <button onclick="askQuestion('Opisz kinetykę reakcji enzymatycznej')" 
+                                class="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400 rounded-lg text-sm transition">
+                                Kinetyka enzymatyczna
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Interface -->
+                    <div class="bg-white/5 backdrop-blur-sm rounded-2xl border border-gray-700 overflow-hidden">
+                        <!-- Chat messages -->
+                        <div id="chatMessages" class="h-96 overflow-y-auto p-6 space-y-4">
+                            <div class="text-center text-gray-400 text-sm">
+                                Zadaj pytanie o materiały szkoleniowe...
+                            </div>
+                        </div>
+                        
+                        <!-- Input -->
+                        <div class="border-t border-gray-700 p-4 bg-black/20">
+                            <div class="flex gap-3">
+                                <input type="text" id="userInput" placeholder="Zadaj pytanie..." 
+                                    class="flex-1 px-4 py-3 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                                    onkeypress="if(event.key==='Enter') searchKnowledgeBase()">
+                                <button onclick="searchKnowledgeBase()" 
+                                    class="px-8 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold transition">
+                                    Szukaj
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-center text-xs text-gray-500">
+                        Backend: <span id="backendStatus" class="text-yellow-400">sprawdzanie...</span>
+                    </div>
+                </div>
+            </div>`
+        ];
+
+        let currentSlideIndex = 0;
+
+        function showSlide(index) {
+            currentSlideIndex = index;
+            document.getElementById('slides-container').innerHTML = slides[index];
+            
+            // Sprawdź status backendu jeśli jesteśmy na demo
+            if (index === 2) {
+                checkBackendStatus();
+            }
+        }
+
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`);
+                if (response.ok) {
+                    document.getElementById('backendStatus').innerHTML = 
+                        '<span class="text-green-400">✓ Połączony</span>';
+                } else {
+                    throw new Error('Niedostępny');
+                }
+            } catch (error) {
+                document.getElementById('backendStatus').innerHTML = 
+                    '<span class="text-red-400">✗ Niedostępny - backend uśpiony (pierwsze zapytanie go obudzi)</span>';
+            }
+        }
+
+        function askQuestion(question) {
+            document.getElementById('userInput').value = question;
+            searchKnowledgeBase();
+        }
+
+        async function searchKnowledgeBase() {
+            const query = document.getElementById('userInput').value.trim();
+            if (!query) return;
+
+            // Add user message
+            addMessage('user', query);
+            
+            // Clear input
+            document.getElementById('userInput').value = '';
+            
+            // Show loading
+            const loadingId = addMessage('assistant', '🔍 Przeszukuję bazę wiedzy...');
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Błąd połączenia z backendem');
+                }
+
+                const data = await response.json();
+                
+                // Remove loading message
+                document.getElementById(loadingId).remove();
+
+                if (data.success) {
+                    displayResults(data.results);
+                } else {
+                    addMessage('system', `❌ Błąd: ${data.error}`);
+                }
+
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                addMessage('system', `❌ Błąd: ${error.message}. Backend może być uśpiony - spróbuj ponownie za chwilę.`);
+            }
+        }
+
+        function displayResults(results) {
+            if (!results || results.length === 0) {
+                addMessage('system', '❌ Nie znaleziono wyników.');
+                return;
+            }
+
+            let resultsHTML = `<div class="space-y-4">
+                <div class="font-bold text-lg text-green-400">✅ Znaleziono ${results.length} wyników:</div>`;
+
+            results.forEach((result, i) => {
+                const score = (result.score * 100).toFixed(1);
+                const content = result.content.length > 200 
+                    ? result.content.substring(0, 200) + '...' 
+                    : result.content;
+
+                resultsHTML += `
+                    <div class="bg-black/30 border border-gray-600 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="font-bold text-purple-400">${i + 1}. ${result.presentation}</div>
+                            <div class="px-3 py-1 bg-green-600/30 rounded-full text-xs font-bold">
+                                ${score}% dopasowanie
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-400 mb-2">Slajd ID: ${result.slide_id}</div>
+                        <div class="text-sm text-gray-300">${content}</div>
+                    </div>
+                `;
+            });
+
+            resultsHTML += `</div>`;
+            
+            addMessage('assistant', resultsHTML);
+        }
+
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageId = 'msg-' + Date.now();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.id = messageId;
+            messageDiv.className = role === 'user' 
+                ? 'flex justify-end' 
+                : 'flex justify-start';
+            
+            const bubbleClass = role === 'user'
+                ? 'bg-purple-600 text-white'
+                : role === 'system'
+                ? 'bg-yellow-600/30 border border-yellow-600 text-yellow-200'
+                : 'bg-white/10 text-white';
+            
+            messageDiv.innerHTML = `
+                <div class="max-w-3xl px-4 py-3 rounded-2xl ${bubbleClass}">
+                    ${content}
+                </div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            return messageId;
+        }
+
+        // Show first slide on load
+        showSlide(0);
+    </script>
+</body>
+</html>

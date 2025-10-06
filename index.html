@@ -27,49 +27,47 @@
         const slides = [
             // Slide 1: Jak działa
             `<div class="min-h-screen flex items-center justify-center p-8">
-                <div class="max-w-5xl w-full">
-                    <h2 class="text-5xl font-bold mb-12 text-center">Jak to działa?</h2>
-                    <div class="space-y-6">
-                        <div class="flex items-center gap-6">
-                            <div class="w-20 h-20 bg-blue-600 rounded-xl flex items-center justify-center text-3xl shrink-0">📄</div>
-                            <div class="flex-1 bg-blue-600/20 border border-blue-400 rounded-xl p-6">
-                                <div class="font-bold text-xl mb-2">1. Przygotowanie danych</div>
-                                <div class="text-gray-300">Prezentacje (CSV) → Gemini tworzy wektory (embeddingi) → Qdrant zapisuje</div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-6">
-                            <div class="w-20 h-20 bg-purple-600 rounded-xl flex items-center justify-center text-3xl shrink-0">❓</div>
-                            <div class="flex-1 bg-purple-600/20 border border-purple-400 rounded-xl p-6">
-                                <div class="font-bold text-xl mb-2">2. Pytanie użytkownika</div>
-                                <div class="text-gray-300">Gemini zamienia pytanie na wektor</div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-6">
-                            <div class="w-20 h-20 bg-green-600 rounded-xl flex items-center justify-center text-3xl shrink-0">🔍</div>
-                            <div class="flex-1 bg-green-600/20 border border-green-400 rounded-xl p-6">
-                                <div class="font-bold text-xl mb-2">3. Wyszukiwanie semantyczne</div>
-                                <div class="text-gray-300">Qdrant znajduje najbardziej podobne fragmenty (rozumie ZNACZENIE!)</div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-6">
-                            <div class="w-20 h-20 bg-orange-600 rounded-xl flex items-center justify-center text-3xl shrink-0">💡</div>
-                            <div class="flex-1 bg-orange-600/20 border border-orange-400 rounded-xl p-6">
-                                <div class="font-bold text-xl mb-2">4. Odpowiedź AI</div>
-                                <div class="text-gray-300">Gemini generuje naturalną odpowiedź na podstawie znalezionych fragmentów</div>
-                            </div>
-                        </div>
+                <div class="max-w-5xl w-full space-y-8">
+                    <h2 class="text-5xl font-bold mb-8 text-center">Jak to działa?</h2>
+                    
+                    <div class="bg-white/5 border border-gray-600 rounded-xl p-6 space-y-4">
+                        <h3 class="text-2xl font-bold text-blue-400">1. Przygotowanie materiałów</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Każdy slajd z prezentacji jest przetwarzany przez model językowy Gemini, który zamienia tekst na reprezentację matematyczną - wektor składający się z 768 liczb. Ten proces nazywany embeddingiem pozwala zapisać znaczenie treści w formie, którą komputer może porównywać. Wszystkie wektory trafiają do specjalistycznej bazy danych Qdrant, zaprojektowanej do przechowywania i szybkiego przeszukiwania takich reprezentacji. Razem z wektorami zapisywane są metadane: nazwa prezentacji, numer slajdu i oryginalna treść.
+                        </p>
+                    </div>
+
+                    <div class="bg-white/5 border border-gray-600 rounded-xl p-6 space-y-4">
+                        <h3 class="text-2xl font-bold text-purple-400">2. Przetwarzanie pytania</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Gdy użytkownik zadaje pytanie, system wykonuje identyczny proces embeddingu - zamienia pytanie na wektor o tej samej strukturze co fragmenty w bazie. Ta wspólna reprezentacja matematyczna umożliwia porównywanie znaczenia pytania ze znaczeniem zapisanych materiałów, niezależnie od użytych słów czy sformułowań.
+                        </p>
+                    </div>
+
+                    <div class="bg-white/5 border border-gray-600 rounded-xl p-6 space-y-4">
+                        <h3 class="text-2xl font-bold text-green-400">3. Wyszukiwanie semantyczne</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Baza Qdrant porównuje wektor pytania z wektorami wszystkich slajdów, obliczając podobieństwo cosinusowe - miarę matematyczną pokazującą jak bardzo dwa wektory "wskazują w tym samym kierunku". System zwraca 5-7 fragmentów o najwyższym podobieństwie, pomijając slajdy zawierające głównie pytania aktywizujące. Każdy wynik otrzymuje score od 0 do 1, gdzie wartości powyżej 0.7 wskazują na wysoką zgodność tematyczną. To podejście wykracza poza proste dopasowanie słów kluczowych - system rozpoznaje synonimy, powiązane koncepcje i kontekst.
+                        </p>
+                    </div>
+
+                    <div class="bg-white/5 border border-gray-600 rounded-xl p-6 space-y-4">
+                        <h3 class="text-2xl font-bold text-orange-400">4. Generowanie odpowiedzi</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Znalezione fragmenty są przekazywane do modelu Gemini wraz z instrukcją o stworzeniu syntezy informacji. Model analizuje wszystkie fragmenty jednocześnie, identyfikuje kluczowe fakty, łączy powiązane informacje i formułuje spójną odpowiedź. Proces ten pozwala na przedstawienie wiedzy z kilku slajdów w formie ciągłej narracji, zachowując terminologię i poziom szczegółowości materiałów źródłowych. System automatycznie dołącza referencje do źródłowych slajdów.
+                        </p>
+                    </div>
+
+                    <div class="bg-purple-600/20 border border-purple-400 rounded-xl p-6 space-y-3">
+                        <h3 class="text-xl font-bold">Możliwości systemu</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Architektura RAG (Retrieval-Augmented Generation) umożliwia zadawanie pytań w dowolnej formie - system rozpoznaje intencję niezależnie od sformułowania. Można pytać o definicje, procesy biochemiczne, związki między konceptami czy zastosowania kliniczne. Odpowiedzi są generowane wyłącznie na podstawie dostępnych materiałów, co eliminuje problem halucynacji typowy dla modeli językowych działających bez dostępu do konkretnych źródeł. System działa jako warstwa interpretacyjna między użytkownikiem a materiałami, umożliwiając eksplorację treści bez konieczności przeglądania dziesiątek slajdów czy znania dokładnej terminologii.
+                        </p>
                     </div>
                     
-                    <div class="mt-12 bg-yellow-600/20 border border-yellow-400 rounded-xl p-6 text-center">
-                        <p class="text-lg"><strong>Kluczowa różnica:</strong> System rozumie znaczenie pytania i odpowiada naturalnym językiem!</p>
-                    </div>
-                    
-                    <div class="mt-8 bg-purple-600/20 border border-purple-400 rounded-xl p-6 text-center">
-                        <p class="text-xl"><strong>Baza:</strong> 720 wektorów z 6 prezentacji biochemicznych</p>
-                        <p class="text-sm text-gray-400 mt-2">Kolekcja: prezentacje_biochemia</p>
+                    <div class="bg-blue-600/20 border border-blue-400 rounded-xl p-4 text-center">
+                        <p class="text-lg"><strong>Baza:</strong> 720 wektorów z 6 prezentacji biochemicznych</p>
+                        <p class="text-sm text-gray-400 mt-1">Kolekcja: prezentacje_biochemia</p>
                     </div>
                 </div>
             </div>`,

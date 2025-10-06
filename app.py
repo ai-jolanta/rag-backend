@@ -26,42 +26,92 @@ def clean_html(text):
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
+def is_question_slide(content):
+    """Sprawdza czy slajd zawiera głównie pytania aktywizujące"""
+    clean_content = clean_html(content).lower()
+    
+    # Heurystyki dla slajdów z pytaniami
+    question_markers = ['?', 'pytani', 'zastanów się', 'rozgrzewka', 'aktywizuj']
+    question_count = sum(1 for marker in question_markers if marker in clean_content)
+    
+    # Jeśli jest wiele pytań i mało treści merytorycznej
+    if '?' in clean_content:
+        question_marks = clean_content.count('?')
+        words = len(clean_content.split())
+        # Jeśli więcej niż 2 pytania i mało słów - prawdopodobnie slajd aktywizujący
+        if question_marks >= 2 and words < 200:
+            return True
+    
+    # Sprawdź charakterystyczne frazy
+    if any(phrase in clean_content for phrase in ['czas na rozgrzewkę', 'pytania aktywizujące', 'zastanów się nad']):
+        return True
+    
+    return False
+
 def generate_answer(query, search_results):
     """Generuje naturalną odpowiedź używając Gemini"""
     
-    # Przygotuj kontekst z wyników wyszukiwania
+    # Filtruj slajdy z pytaniami i przygotuj kontekst
     context_parts = []
     sources = []
     
-    for i, result in enumerate(search_results[:3], 1):  # Top 3 wyniki
+    # Użyj top 5-7 wyników, pomijając slajdy z pytaniami
+    for i, result in enumerate(search_results[:10], 1):  # Sprawdź więcej wyników
         payload = result.payload
-        clean_content = clean_html(payload.get("content", ""))
+        content = payload.get("content", "")
         
-        context_parts.append(f"Fragment {i}: {clean_content}")
-        sources.append({
-            "presentation": payload.get("presentation", ""),
-            "slide_id": payload.get("slide_id", ""),
-            "score": float(result.score)
-        })
+        # Pomiń slajdy z pytaniami aktywizującymi
+        if is_question_slide(content):
+            continue
+        
+        clean_content = clean_html(content)
+        
+        # Dodaj tylko jeśli ma sens (nie puste)
+        if len(clean_content.strip()) > 50:
+            context_parts.append(f"Fragment {len(context_parts)+1} (z prezentacji '{payload.get('presentation', '')}', Slajd ID: {payload.get('slide_id', '')}):\n{clean_content}")
+            sources.append({
+                "presentation": payload.get("presentation", ""),
+                "slide_id": payload.get("slide_id", ""),
+                "score": float(result.score)
+            })
+        
+        # Zbierz do 5 merytorycznych fragmentów
+        if len(context_parts) >= 5:
+            break
+    
+    if not context_parts:
+        return {
+            "answer": "Nie znalazłem merytorycznych informacji na ten temat w dostępnych materiałach.",
+            "sources": [],
+            "model_used": None
+        }
     
     context = "\n\n".join(context_parts)
     
-    # Prompt dla Gemini
-    prompt = f"""Jesteś asystentem AI, który odpowiada na pytania na podstawie materiałów szkoleniowych z biochemii.
+    # Prompt dla Gemini - dużo bardziej szczegółowy
+    prompt = f"""Jesteś ekspertem z biochemii, który odpowiada na pytania studentów na podstawie materiałów dydaktycznych.
 
 Pytanie użytkownika: {query}
 
-Dostępne fragmenty z materiałów:
+Dostępne fragmenty z materiałów szkoleniowych:
 {context}
 
-INSTRUKCJE:
-1. Odpowiedz na pytanie w naturalny, zrozumiały sposób
-2. Bazuj TYLKO na informacjach z powyższych fragmentów
-3. Jeśli fragmenty nie zawierają odpowiedzi, powiedz to wprost
-4. Odpowiedź ma być zwięzła (2-4 zdania) ale merytoryczna
-5. NIE dodawaj na końcu informacji o źródłach - zostaną dodane automatycznie
+INSTRUKCJE DLA ODPOWIEDZI:
+1. Stwórz SZCZEGÓŁOWĄ, edukacyjną odpowiedź na poziomie akademickim
+2. POŁĄCZ informacje ze WSZYSTKICH dostarczonych fragmentów w spójną narrację
+3. Zachowaj merytoryczny, naukowy charakter - używaj terminologii z materiałów
+4. Odpowiedź powinna zawierać:
+   - Definicje kluczowych pojęć
+   - Mechanizmy i procesy (jeśli są w materiałach)
+   - Szczegóły i konkretne przykłady
+   - Kontekst biologiczny/medyczny
+5. Pisz pełnymi akapitami, NIE punktami
+6. Długość: 4-8 zdań (w zależności od złożoności tematu)
+7. Bazuj TYLKO na informacjach z fragmentów - nie dodawaj własnej wiedzy
+8. Jeśli materiały zawierają nazwy chemiczne, procesy, enzymy - wymień je konkretnie
+9. NIE dodawaj na końcu informacji o źródłach - zostaną dodane automatycznie
 
-Odpowiedź:"""
+Odpowiedź (pełna, szczegółowa, akademicka):"""
 
     # Próbuj najpierw z gemini-2.5-pro, potem fallback na 2.5-flash
     models_to_try = ['gemini-2.5-pro', 'gemini-2.5-flash']

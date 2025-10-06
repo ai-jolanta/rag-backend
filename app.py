@@ -55,8 +55,8 @@ def generate_answer(query, search_results):
     context_parts = []
     sources = []
     
-    # Użyj top 5-7 wyników, pomijając slajdy z pytaniami
-    for i, result in enumerate(search_results[:10], 1):  # Sprawdź więcej wyników
+    # Użyj top 7-10 wyników, pomijając slajdy z pytaniami
+    for i, result in enumerate(search_results[:15], 1):  # Sprawdź więcej wyników
         payload = result.payload
         content = payload.get("content", "")
         
@@ -75,8 +75,8 @@ def generate_answer(query, search_results):
                 "score": float(result.score)
             })
         
-        # Zbierz do 5 merytorycznych fragmentów
-        if len(context_parts) >= 5:
+        # Zbierz do 8 merytorycznych fragmentów
+        if len(context_parts) >= 8:
             break
     
     if not context_parts:
@@ -88,30 +88,47 @@ def generate_answer(query, search_results):
     
     context = "\n\n".join(context_parts)
     
-    # Prompt dla Gemini - dużo bardziej szczegółowy
-    prompt = f"""Jesteś ekspertem z biochemii, który odpowiada na pytania studentów na podstawie materiałów dydaktycznych.
+    # Prompt dla Gemini - poziom medyczny, bardzo szczegółowy
+    prompt = f"""Jesteś ekspertem biochemii klinicznej, który przygotowuje materiały edukacyjne dla lekarzy i studentów medycyny.
 
-Pytanie użytkownika: {query}
+Pytanie: {query}
 
-Dostępne fragmenty z materiałów szkoleniowych:
+Dostępne fragmenty z materiałów dydaktycznych:
 {context}
 
-INSTRUKCJE DLA ODPOWIEDZI:
-1. Stwórz SZCZEGÓŁOWĄ, edukacyjną odpowiedź na poziomie akademickim
-2. POŁĄCZ informacje ze WSZYSTKICH dostarczonych fragmentów w spójną narrację
-3. Zachowaj merytoryczny, naukowy charakter - używaj terminologii z materiałów
-4. Odpowiedź powinna zawierać:
-   - Definicje kluczowych pojęć
-   - Mechanizmy i procesy (jeśli są w materiałach)
-   - Szczegóły i konkretne przykłady
-   - Kontekst biologiczny/medyczny
-5. Pisz pełnymi akapitami, NIE punktami
-6. Długość: 4-8 zdań (w zależności od złożoności tematu)
-7. Bazuj TYLKO na informacjach z fragmentów - nie dodawaj własnej wiedzy
-8. Jeśli materiały zawierają nazwy chemiczne, procesy, enzymy - wymień je konkretnie
-9. NIE dodawaj na końcu informacji o źródłach - zostaną dodane automatycznie
+WYMAGANIA DLA ODPOWIEDZI (POZIOM MEDYCZNY):
 
-Odpowiedź (pełna, szczegółowa, akademicka):"""
+1. ODBIORCA: Lekarze i studenci medycyny - używaj pełnej terminologii medycznej i biochemicznej
+2. SZCZEGÓŁOWOŚĆ: Odpowiedź musi zawierać:
+   - Pełne nazwy chemiczne i enzymatyczne (np. γ-glutamylotranspeptydaza, a nie tylko GGTP)
+   - Konkretne mechanizmy biochemiczne i ścieżki metaboliczne
+   - Wartości referencyjne, jeśli są w materiałach
+   - Lokalizacje subkomórkowe procesów
+   - Produkty i substraty reakcji
+   - Znaczenie kliniczne i diagnostyczne
+
+3. STRUKTURA: 
+   - Rozpocznij od definicji lub kontekstu biochemicznego
+   - Przedstaw szczegółowy mechanizm/proces
+   - Opisz zastosowania kliniczne lub znaczenie patofizjologiczne
+   - Długość: 6-12 zdań (w zależności od złożoności tematu)
+
+4. INTEGRACJA WIEDZY:
+   - Połącz informacje ze WSZYSTKICH fragmentów w spójną całość
+   - Zachowaj chronologię procesów biochemicznych
+   - Wyjaśnij związki przyczynowo-skutkowe
+
+5. PRECYZJA:
+   - Używaj dokładnych nazw zgodnie z nomenklaturą biochemiczną
+   - Cytuj konkretne enzymy, koenzymy, metabolity
+   - Zachowaj wszystkie szczegóły techniczne z materiałów
+   - Jeśli materiały zawierają skróty - użyj pełnych nazw przy pierwszym wystąpieniu
+
+6. STYL: Merytoryczny, akademicki, bez upraszczania. Pisz akapitami z logicznym przepływem informacji.
+
+7. OGRANICZENIA: Bazuj WYŁĄCZNIE na dostarczonych fragmentach. NIE dodawaj informacji o źródłach.
+
+Odpowiedź (poziom medyczny, szczegółowa, merytoryczna):"""
 
     # Próbuj najpierw z gemini-2.5-pro, potem fallback na 2.5-flash
     models_to_try = ['gemini-2.5-pro', 'gemini-2.5-flash']

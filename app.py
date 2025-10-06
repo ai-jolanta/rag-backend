@@ -63,20 +63,30 @@ INSTRUKCJE:
 
 Odpowiedź:"""
 
-    try:
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(prompt)
-        answer = response.text
-        
-        return {
-            "answer": answer,
-            "sources": sources
-        }
-    except Exception as e:
-        return {
-            "answer": f"Przepraszam, wystąpił błąd podczas generowania odpowiedzi: {str(e)}",
-            "sources": sources
-        }
+    # Próbuj najpierw z gemini-2.5-pro, potem fallback na 2.5-flash
+    models_to_try = ['gemini-2.5-pro', 'gemini-2.5-flash']
+    
+    for model_name in models_to_try:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            answer = response.text
+            
+            return {
+                "answer": answer,
+                "sources": sources,
+                "model_used": model_name
+            }
+        except Exception as e:
+            # Jeśli to nie był ostatni model, próbuj dalej
+            if model_name != models_to_try[-1]:
+                continue
+            # Jeśli to był ostatni model, zwróć błąd
+            return {
+                "answer": f"Przepraszam, wystąpił błąd podczas generowania odpowiedzi: {str(e)}",
+                "sources": sources,
+                "model_used": None
+            }
 
 @app.route('/')
 def home():

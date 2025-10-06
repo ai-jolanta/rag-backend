@@ -11,12 +11,9 @@
     <!-- Nawigacja -->
     <div class="fixed top-4 right-4 z-50 flex gap-2">
         <button onclick="showSlide(0)" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition text-sm">
-            Intro
-        </button>
-        <button onclick="showSlide(1)" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition text-sm">
             Jak działa
         </button>
-        <button onclick="showSlide(2)" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition text-sm font-bold">
+        <button onclick="showSlide(1)" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition text-sm font-bold">
             Live Demo
         </button>
     </div>
@@ -28,43 +25,7 @@
         const BACKEND_URL = 'https://rag-backend-2lo0.onrender.com';
 
         const slides = [
-            // Slide 1: Tytuł i problem
-            `<div class="min-h-screen flex items-center justify-center p-8">
-                <div class="max-w-4xl w-full space-y-12">
-                    <div class="text-center space-y-6">
-                        <h1 class="text-6xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                            Inteligentna Baza Wiedzy
-                        </h1>
-                        <p class="text-2xl text-gray-300">RAG System dla materiałów szkoleniowych</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-8 mt-16">
-                        <div class="bg-red-500/10 border border-red-500/30 p-8 rounded-xl">
-                            <h3 class="text-2xl font-bold mb-4 text-red-400">Bez RAG</h3>
-                            <ul class="space-y-3 text-gray-300">
-                                <li>→ AI bez dostępu do naszych materiałów</li>
-                                <li>→ Ogólne, nieprecyzyjne odpowiedzi</li>
-                                <li>→ Halucynacje (wymyślone fakty)</li>
-                            </ul>
-                        </div>
-                        <div class="bg-green-500/10 border border-green-500/30 p-8 rounded-xl">
-                            <h3 class="text-2xl font-bold mb-4 text-green-400">Z RAG</h3>
-                            <ul class="space-y-3 text-gray-300">
-                                <li>→ AI przeszukuje nasze prezentacje</li>
-                                <li>→ Odpowiedzi oparte na faktach</li>
-                                <li>→ Źródło informacji (slajd + plik)</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="bg-purple-600/20 border border-purple-400 rounded-xl p-6 text-center">
-                        <p class="text-xl"><strong>Baza:</strong> 720 wektorów z 6 prezentacji biochemicznych</p>
-                        <p class="text-sm text-gray-400 mt-2">Kolekcja: prezentacje_biochemia</p>
-                    </div>
-                </div>
-            </div>`,
-
-            // Slide 2: Jak działa
+            // Slide 1: Jak działa
             `<div class="min-h-screen flex items-center justify-center p-8">
                 <div class="max-w-5xl w-full">
                     <h2 class="text-5xl font-bold mb-12 text-center">Jak to działa?</h2>
@@ -105,10 +66,15 @@
                     <div class="mt-12 bg-yellow-600/20 border border-yellow-400 rounded-xl p-6 text-center">
                         <p class="text-lg"><strong>Kluczowa różnica:</strong> System rozumie znaczenie pytania i odpowiada naturalnym językiem!</p>
                     </div>
+                    
+                    <div class="mt-8 bg-purple-600/20 border border-purple-400 rounded-xl p-6 text-center">
+                        <p class="text-xl"><strong>Baza:</strong> 720 wektorów z 6 prezentacji biochemicznych</p>
+                        <p class="text-sm text-gray-400 mt-2">Kolekcja: prezentacje_biochemia</p>
+                    </div>
                 </div>
             </div>`,
 
-            // Slide 3: Live Demo
+            // Slide 2: Live Demo
             `<div class="min-h-screen flex items-center justify-center p-8">
                 <div class="max-w-6xl w-full">
                     <h2 class="text-4xl font-bold mb-8 text-center">Live Demo - Przetestuj sam!</h2>
@@ -173,7 +139,7 @@
             document.getElementById('slides-container').innerHTML = slides[index];
             
             // Sprawdź status backendu jeśli jesteśmy na demo
-            if (index === 2) {
+            if (index === 1) {
                 checkBackendStatus();
             }
         }
